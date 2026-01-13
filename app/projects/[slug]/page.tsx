@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { useRef, useEffect } from "react"
+import { useRef, useEffect, useState } from "react"
 const projectsData = {
   "leaf-spring-analysis": {
     title: "Static Structural Analysis of Leaf Spring",
@@ -97,12 +97,12 @@ function VideoPlayer({ src }: { src: string }) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    // This ensures that even if React hydration lags, 
-    // the browser hardware-accelerator sees the 'muted' flag is set.
     if (videoRef.current) {
       videoRef.current.muted = true;
       videoRef.current.play().catch(err => {
-        console.error("Autoplay blocked or file not found:", src, err);
+        console.warn("Autoplay was prevented, showing controls instead.", err);
+        // If autoplay fails, show controls so user can play manually
+        if (videoRef.current) videoRef.current.controls = true;
       });
     }
   }, [src]);
@@ -111,12 +111,12 @@ function VideoPlayer({ src }: { src: string }) {
     <div className="w-full aspect-video bg-muted rounded-lg overflow-hidden border border-border">
       <video
         ref={videoRef}
-        key={src} // Force re-render if src changes
+        key={src}
         autoPlay
         loop
         muted
         playsInline
-        preload="auto"
+        preload="metadata"
         className="w-full h-full object-cover"
       >
         <source src={src} type="video/mp4" />
