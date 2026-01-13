@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-
+import { useRef, useEffect } from "react"
 const projectsData = {
   "leaf-spring-analysis": {
     title: "Static Structural Analysis of Leaf Spring",
@@ -84,20 +84,52 @@ const projectsData = {
       "Results: Analyzed Total Deformation and Von-Mises Stress over time to identify maximum deflection points during the climb",
     ],
     images: ["/images/ladder.png"],
-    videos: ["/videos/Total deformation final .mp4", "/videos/Equivalent Stress final.mp4", "/videos/Total Deformation 1000x final.mp4", "/videos/Equivalent Stress 1000x final.mp4"],
+    videos: [
+      "/videos/Total%20deformation%20final%20.mp4", // Added %20 for spaces
+      "/videos/Equivalent%20Stress%20final.mp4",
+      "/videos/Total%20Deformation%201000x%20final.mp4",
+      "/videos/Equivalent%20Stress%201000x%20final.mp4"
+    ],
   },
+}
+
+function VideoPlayer({ src }: { src: string }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      // Force muted to true in the DOM to bypass browser autoplay blocks
+      videoRef.current.defaultMuted = true;
+      videoRef.current.muted = true;
+    }
+  }, []);
+
+  return (
+    <div className="w-full aspect-video bg-muted rounded-lg overflow-hidden border border-border">
+      <video
+        ref={videoRef}
+        src={src}
+        autoPlay
+        loop
+        muted
+        playsInline
+        preload="metadata"
+        className="w-full h-full object-cover"
+      />
+    </div>
+  );
 }
 
 export default function ProjectPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params)
   const project = projectsData[slug as keyof typeof projectsData]
+  
   if (!project) {
     notFound()
   }
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Back Button */}
       <div className="container mx-auto px-4 py-6">
         <Link href="/">
           <Button variant="ghost" className="gap-2 text-muted-foreground hover:text-foreground">
@@ -107,7 +139,6 @@ export default function ProjectPage({ params }: { params: Promise<{ slug: string
         </Link>
       </div>
 
-      {/* Project Content */}
       <div className="container mx-auto px-4 pb-16 md:pb-24">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -115,8 +146,9 @@ export default function ProjectPage({ params }: { params: Promise<{ slug: string
           transition={{ duration: 0.5 }}
           className="max-w-4xl mx-auto"
         >
-          {/* Title and Tools */}
-          <h1 className="text-3xl md:text-5xl font-bold text-foreground mb-6 text-balance">{project.title}</h1>
+          <h1 className="text-3xl md:text-5xl font-bold text-foreground mb-6 text-balance">
+            {project.title}
+          </h1>
 
           <div className="flex flex-wrap gap-2 mb-8">
             {project.tools.map((tool, index) => (
@@ -130,58 +162,42 @@ export default function ProjectPage({ params }: { params: Promise<{ slug: string
             ))}
           </div>
 
-          {/* Description */}
           <div className="prose prose-lg max-w-none mb-12">
             <p className="text-foreground leading-relaxed text-pretty">{project.description}</p>
           </div>
 
-          {/* Images */}
+          {/* Images Section */}
           {project.images.length > 0 && (
             <div className="mb-12">
               <h2 className="text-2xl font-bold text-foreground mb-6">Images</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {project.images.map((image, index) => (
-                  <div
-                    key={index}
-                    className="w-full aspect-video bg-muted rounded-lg overflow-hidden border border-border"
-                  >
-                    <img
-                      src={image || "/placeholder.svg"}
-                      alt={`${project.title} - Image ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
+                  <div key={index} className="w-full aspect-video bg-muted rounded-lg overflow-hidden border border-border">
+                    <img src={image || "/placeholder.svg"} alt={project.title} className="w-full h-full object-cover" />
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Videos (autoplay, loop, muted, no controls) */}
+          {/* Videos Section */}
           {project.videos.length > 0 && (
             <div className="mb-12">
               <h2 className="text-2xl font-bold text-foreground mb-6">Videos</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {project.videos.map((video, index) => (
-                  <div
-                    key={index}
-                    className="w-full aspect-video bg-muted rounded-lg overflow-hidden border border-border"
-                  >
-                    <video src={video} autoPlay loop muted playsInline className="w-full h-full object-cover" />
-                  </div>
+                  <VideoPlayer key={index} src={video} />
                 ))}
               </div>
             </div>
           )}
 
-          {/* Technical Details */}
+          {/* Technical Details Section */}
           <div className="bg-card border border-border rounded-lg p-6 md:p-8">
             <h2 className="text-2xl font-bold text-foreground mb-6">Technical Details</h2>
             <ul className="space-y-3">
               {project.details.map((detail, index) => (
-                <li
-                  key={index}
-                  className="text-foreground leading-relaxed pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-primary before:text-xl"
-                >
+                <li key={index} className="text-foreground leading-relaxed pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-primary before:text-xl">
                   {detail}
                 </li>
               ))}
