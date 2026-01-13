@@ -85,10 +85,10 @@ const projectsData = {
     ],
     images: ["/images/ladder.png"],
     videos: [
-      "/videos/Total%20deformation%20final%20.mp4", // Added %20 for spaces
-      "/videos/Equivalent%20Stress%20final.mp4",
-      "/videos/Total%20Deformation%201000x%20final.mp4",
-      "/videos/Equivalent%20Stress%201000x%20final.mp4"
+      "/videos/Total deformation final.mp4", 
+      "/videos/Equivalent Stress Final.mp4",
+      "/videos/Total Deformation 1000x final.mp4",
+      "/videos/Equivalent Stress 1000x final.mp4"
     ],
   },
 }
@@ -97,29 +97,34 @@ function VideoPlayer({ src }: { src: string }) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
+    // This ensures that even if React hydration lags, 
+    // the browser hardware-accelerator sees the 'muted' flag is set.
     if (videoRef.current) {
-      // Force muted to true in the DOM to bypass browser autoplay blocks
-      videoRef.current.defaultMuted = true;
       videoRef.current.muted = true;
+      videoRef.current.play().catch(err => {
+        console.error("Autoplay blocked or file not found:", src, err);
+      });
     }
-  }, []);
+  }, [src]);
 
   return (
     <div className="w-full aspect-video bg-muted rounded-lg overflow-hidden border border-border">
       <video
         ref={videoRef}
-        src={src}
+        key={src} // Force re-render if src changes
         autoPlay
         loop
         muted
         playsInline
-        preload="metadata"
+        preload="auto"
         className="w-full h-full object-cover"
-      />
+      >
+        <source src={src} type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
     </div>
   );
 }
-
 export default function ProjectPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params)
   const project = projectsData[slug as keyof typeof projectsData]
