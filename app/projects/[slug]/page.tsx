@@ -1,12 +1,12 @@
 "use client"
-import { use } from "react"
+import { use, useRef, useEffect, useState } from "react"
 import { motion } from "framer-motion"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Loader2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { useRef, useEffect, useState } from "react"
+
 const projectsData = {
   "leaf-spring-analysis": {
     title: "Static Structural Analysis of Leaf Spring",
@@ -93,38 +93,83 @@ const projectsData = {
   },
 }
 
+// Optimized Video Player Component
 function VideoPlayer({ src }: { src: string }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isInView, setIsInView] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Intersection Observer to only load the video when it scrolls into view
   useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.muted = true;
-      videoRef.current.play().catch(err => {
-        console.warn("Autoplay was prevented, showing controls instead.", err);
-        // If autoplay fails, show controls so user can play manually
-        if (videoRef.current) videoRef.current.controls = true;
-      });
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setIsInView(true); // Triggers rendering of the <video> tag
+        } else if (videoRef.current) {
+          // Pause video if it scrolls out of view to save resources
+          videoRef.current.pause();
+        }
+      },
+      { threshold: 0.1 } // Triggers when 10% of the video container is visible
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
     }
-  }, [src]);
+
+    return () => {
+      if (containerRef.current) observer.unobserve(containerRef.current);
+    };
+  }, []);
+
+  // Handle Autoplay safely once it's in view
+  useEffect(() => {
+    if (isInView && videoRef.current) {
+      videoRef.current.muted = true;
+      const playPromise = videoRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          console.warn("Autoplay was prevented:", err);
+          if (videoRef.current) videoRef.current.controls = true;
+        });
+      }
+    }
+  }, [isInView, src]);
 
   return (
-    <div className="w-full aspect-video bg-muted rounded-lg overflow-hidden border border-border">
-      <video
-        ref={videoRef}
-        key={src}
-        autoPlay
-        loop
-        muted
-        playsInline
-        preload="metadata"
-        className="w-full h-full object-cover"
-      >
-        <source src={src} type="video/mp4" />
-        Your browser does not support the video tag.
-      </video>
+    <div ref={containerRef} className="relative w-full aspect-video bg-muted rounded-lg overflow-hidden border border-border">
+      
+      {/* Loading Spinner */}
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-muted z-10">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      )}
+
+      {/* Only mount the video element if it has scrolled into view */}
+      {isInView && (
+        <video
+          ref={videoRef}
+          key={src}
+          loop
+          muted
+          playsInline
+          preload="metadata"
+          className={`w-full h-full object-cover transition-opacity duration-500 ${isLoading ? "opacity-0" : "opacity-100"}`}
+          onLoadStart={() => setIsLoading(true)}
+          onWaiting={() => setIsLoading(true)}
+          onPlaying={() => setIsLoading(false)}
+          onCanPlay={() => setIsLoading(false)}
+        >
+          <source src={src} type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
+      )}
     </div>
   );
 }
+
 export default function ProjectPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params)
   const project = projectsData[slug as keyof typeof projectsData]
